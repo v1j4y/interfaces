@@ -1,0 +1,15 @@
+* Tutorials on writing ISO standard interfaces
+
+*Goals*
+
+1. Simple and clear examples
+2. ISO standard
+3. Literate programing
+
+** Calling C functions from Fortran90
+
+Calling simple c-functions as well as functions that involve n-dimensional arrays.
+
+** Calling Fortran90 from C
+
+Similar interface for calling Fortran functions from C.
