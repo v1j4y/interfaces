@@ -10,14 +10,31 @@
       end interface
       end module cfunctions
 
+      module cfunctions_intvec1d
+      use, intrinsic :: ISO_C_BINDING
+      interface
+         subroutine cmapsum(vec, len, res) bind(C, name='mapsum')
+         import C_INT64_T
+         integer(kind=C_INT64_T) :: len
+         integer(kind=C_INT64_T) :: vec(len)
+         integer(kind=C_INT64_T) :: res
+         end subroutine cmapsum
+      end interface
+      end module cfunctions_intvec1d
+
       program main
       use, intrinsic :: ISO_C_BINDING
-      use cfunctions
+      use cfunctions_intvec1d
       implicit none
-      real :: n   = 4.0d0
-      real :: k   = 2.0d0
-      real :: res =-1.0d0
-      print *,n,k,res
-      call cbinom(n, k, res)
-      print *,n,k,res
+      integer*8 :: len = 10
+      integer*8, dimension(10) :: vec
+      integer*8 :: res = 0
+      integer :: i
+      print *,len,res
+      do i = 1,len
+         vec(i) = i
+         print *,vec(i)
+      end do
+      call cmapsum(vec, len, res)
+      print *,len,res
       end program main

@@ -64,7 +64,7 @@ containing the binomial coefficient.
 
 Now the main program can call the C function.
 
-#+begin_src fortran :main no :tangle fmain.f90
+#+begin_src fortran :main no
       program main
       use, intrinsic :: ISO_C_BINDING
       use cfunctions
@@ -90,9 +90,96 @@ gfortran fmain.f90 cfunctions.o -o main.exe -I/usr/local/include -L/usr/local/li
 | 4.0 | 2.0 | -1.0 |
 | 4.0 | 2.0 |  6.0 |
 
-** TODO [0/5] Passing arrays
+** TODO [1/6] Passing arrays
 
 *** [ ] Passing 1D int array
+
+**** C function
+
+Passing an array is tricky. One needs to be aware that in Fortran arrays are passed
+always by reference and hence the C function will receive a pointer to the first element
+of the array. Striding is important and is taken care in the interface module witten in
+Fortran using ~ISO_C_BINDING~.
+
+#+begin_src c :main no :tangle cfunctions.c
+
+double sum_all(int64_t *vec, int64_t len){
+    int result=0;
+    for(int i = 0; i < len; i++)
+        result += vec[i];
+
+    return(result);
+}
+
+void mapsum(int64_t *vec, int64_t *len, int64_t *res){
+    *res = sum_all(vec, *len);
+}
+
+#+end_src
+
+**** Fortran interface
+
+
+Now the interface in fortram which describes the input and output variables
+which correspond to the c function above. Here care has to be taken
+to correctly initialize the types.
+
+#+begin_src fortran :main no :tangle fmain.f90
+      module cfunctions_intvec1d
+      use, intrinsic :: ISO_C_BINDING
+      interface
+         subroutine cmapsum(vec, len, res) bind(C, name='mapsum')
+         import C_INT64_T
+         integer(kind=C_INT64_T) :: len
+         integer(kind=C_INT64_T) :: vec(len)
+         integer(kind=C_INT64_T) :: res
+         end subroutine cmapsum
+      end interface
+      end module cfunctions_intvec1d
+#+end_src
+
+Now the main program can call the C function.
+
+#+begin_src fortran :main no :tangle fmain.f90
+      program main
+      use, intrinsic :: ISO_C_BINDING
+      use cfunctions_intvec1d
+      implicit none
+      integer*8 :: len = 10
+      integer*8, dimension(10) :: vec
+      integer*8 :: res = 0
+      integer :: i
+      print *,len,res
+      do i = 1,len
+         vec(i) = i
+         print *,vec(i)
+      end do
+      call cmapsum(vec, len, res)
+      print *,len,res
+      end program main
+#+end_src
+
+*** [X] Compiling and Running
+
+#+begin_src shell
+gcc -c cfunctions.c
+gfortran fmain.f90 cfunctions.o -o main.exe -I/usr/local/include -L/usr/local/lib -lgfortran
+./main.exe
+#+end_src
+
+#+RESULTS: :export none
+| 10 |  0 |
+|  1 |    |
+|  2 |    |
+|  3 |    |
+|  4 |    |
+|  5 |    |
+|  6 |    |
+|  7 |    |
+|  8 |    |
+|  9 |    |
+| 10 |    |
+| 10 | 55 |
 
 *** [ ] Passing 2D int array
 
