@@ -22,3 +22,18 @@ double sum_all(int64_t *vec, int64_t len){
 void mapsum(int64_t *vec, int64_t *len, int64_t *res){
     *res = sum_all(vec, *len);
 }
+
+double sum2d_all(int64_t *vec2d, int64_t rows, int64_t cols){
+    int result=0;
+    for(int i = 0; i < rows*cols; i++)
+        printf("---\t %d\n",vec2d[i]);
+    for(int i = 0; i < cols; i++)
+        for(int j = 0; j < rows; j++)
+            result += vec2d[j*cols + i];
+
+    return(result);
+}
+
+void mapsum2d(int64_t *vec2d, int64_t rows, int64_t cols, int64_t *res){
+    *res = sum2d_all(vec2d, rows, cols);
+}
