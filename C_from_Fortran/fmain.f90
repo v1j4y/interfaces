@@ -1,5 +1,4 @@
       module cfunctions
-!     use ISO_C_BINDING, only : C_CHAR, C_INT, C_FLOAT, C_PTR
       use, intrinsic :: ISO_C_BINDING
       interface
          subroutine cbinom(n, k, res) bind(C, name='binom')
@@ -12,7 +11,6 @@
       end module cfunctions
 
       program main
-!     use ISO_C_BINDING, only : C_PTR, C_FLOAT, C_F_POINTER
       use, intrinsic :: ISO_C_BINDING
       use cfunctions
       implicit none
