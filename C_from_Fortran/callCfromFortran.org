@@ -187,6 +187,8 @@ gfortran fmain.f90 cfunctions.o -o main.exe -I/usr/local/include -L/usr/local/li
 
 The main thing to be careful about is to make sure that the ordering is properly
 accounted for. We follow similar to the 1D case using ~ISO_C_BINDING~.
+Remember that the memory layout in Fortran and C is reversed. The array layout
+goes from ~(rows, cols)~ in Fortran to ~[j*cols + rows]~ in C.
 
 #+begin_src c :main no :tangle cfunctions.c
 
