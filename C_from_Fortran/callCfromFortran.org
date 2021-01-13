@@ -11,9 +11,9 @@
 Understanding the standard way of calling C from Fortran is the goal of this
 project. The interface should be standard across compilers and platforms.
 
-** TODO [3/3] Basics
+** TODO [4/4] Basics
 
-*** C code
+- [X] C code
 
 A simple instance for the usage of such an interface can be described
 via a simple C code that calculates the binomial coefficient.
@@ -37,7 +37,7 @@ void binom(float *n, float *k, float *res){
 This function accepts two double (real) numbers \( n, k\) and returns a double
 pointer containing the value of the binomial.
 
-*** [X] F interface
+- [X] F interface
 
 Now the interface in fortram which describes the input and output variables
 which correspond to the c function above.
@@ -60,7 +60,7 @@ This function ~binom~ has been interfaced to Fortran with the name ~cbinom~
 which accepts two real numbers \(n,k\) and returns a pointer to a real number
 containing the binomial coefficient.
 
-*** [X] F program
+- [X] F program
 
 Now the main program can call the C function.
 
@@ -78,7 +78,7 @@ Now the main program can call the C function.
       end program main
 #+end_src
 
-*** [X] Compiling and Running
+- [X] Compiling and Running
 
 #+begin_src shell
 gcc -c cfunctions.c
@@ -90,11 +90,11 @@ gfortran fmain.f90 cfunctions.o -o main.exe -I/usr/local/include -L/usr/local/li
 | 4.0 | 2.0 | -1.0 |
 | 4.0 | 2.0 |  6.0 |
 
-** TODO [1/6] Passing arrays
+** Passing arrays
 
-*** [ ] Passing 1D int array
+*** TODO [3/3] Passing 1D int array
 
-**** C function
+- [X] C function
 
 Passing an array is tricky. One needs to be aware that in Fortran arrays are passed
 always by reference and hence the C function will receive a pointer to the first element
@@ -117,8 +117,7 @@ void mapsum(int64_t *vec, int64_t *len, int64_t *res){
 
 #+end_src
 
-**** Fortran interface
-
+- [X] Fortran interface
 
 Now the interface in fortram which describes the input and output variables
 which correspond to the c function above. Here care has to be taken
@@ -138,7 +137,8 @@ to correctly initialize the types.
       end module cfunctions_intvec1d
 #+end_src
 
-Now the main program can call the C function.
+Now the main program can call the C function. Remember that a 64 bit integer
+in C (i.e. ~int64_t~) is equivalent to ~integer*8~ in Fortran.
 
 #+begin_src fortran :main no :tangle fmain.f90
       program main
@@ -159,7 +159,7 @@ Now the main program can call the C function.
       end program main
 #+end_src
 
-*** [X] Compiling and Running
+- [X] Compiling and Running
 
 #+begin_src shell
 gcc -c cfunctions.c
@@ -181,10 +181,38 @@ gfortran fmain.f90 cfunctions.o -o main.exe -I/usr/local/include -L/usr/local/li
 | 10 |    |
 | 10 | 55 |
 
-*** [ ] Passing 2D int array
+***  TODO [0/3] Passing 2D int array
 
-*** [ ] Passing 1D float array
+- [ ] C function on 2D array
 
-*** [ ] Passing 2D float array
+The main thing to be careful about is to make sure that the ordering is properly
+accounted for.
 
-*** [ ] Passing nD <type> array
+
+- [ ] Fortran interface
+
+- [ ] main program
+
+***  TODO [0/3] Passing 1D float array
+
+- [ ] C function on 2D array
+
+- [ ] Fortran interface
+
+- [ ] main program
+
+***  TODO [0/3] Passing 2D float array
+
+- [ ] C function on 2D array
+
+- [ ] Fortran interface
+
+- [ ] main program
+
+***  TODO [0/3] Passing nD <type> array
+
+- [ ] C function on 2D array
+
+- [ ] Fortran interface
+
+- [ ] main program
