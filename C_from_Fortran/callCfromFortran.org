@@ -1,5 +1,5 @@
 # -*- mode:org -*-
-#+TITLE: Call Cfrom Fortran
+#+TITLE: Call C from Fortran
 #+Author: Vijay
 #+email: vijay.gopal.c@gmail.com
 
