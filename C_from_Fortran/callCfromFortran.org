@@ -98,8 +98,7 @@ gfortran fmain.f90 cfunctions.o -o main.exe -I/usr/local/include -L/usr/local/li
 
 Passing an array is tricky. One needs to be aware that in Fortran arrays are passed
 always by reference and hence the C function will receive a pointer to the first element
-of the array. Striding is important and is taken care in the interface module witten in
-Fortran using ~ISO_C_BINDING~.
+of the array.
 
 #+begin_src c :main no :tangle cfunctions.c
 
@@ -121,7 +120,7 @@ void mapsum(int64_t *vec, int64_t *len, int64_t *res){
 
 Now the interface in fortram which describes the input and output variables
 which correspond to the c function above. Here care has to be taken
-to correctly initialize the types.
+to use the corret types.
 
 #+begin_src fortran :main no :tangle fmain.f90
       module cfunctions_intvec1d
@@ -186,20 +185,23 @@ gfortran fmain.f90 cfunctions.o -o main.exe -I/usr/local/include -L/usr/local/li
 - [X] C function on 2D array
 
 The main thing to be careful about is to make sure that the ordering is properly
-accounted for. We follow similar to the 1D case using ~ISO_C_BINDING~.
-Remember that the memory layout in Fortran and C is reversed. The array layout
-goes from ~(rows, cols)~ in Fortran to ~[i + j*rows]~ in C.
+accounted for. We follow similar to the 1D case using ~ISO_C_BINDING~.  Striding
+is important and needs to be considered when writing the interface module in
+Fortran using ~ISO_C_BINDING~.  Remember that the memory layout in Fortran and C
+is reversed.  The array layout goes from ~(rows, cols)~ in Fortran to ~[i +
+j*rows]~ in C.
 
 #+begin_src c :main no :tangle cfunctions.c
 
-double sum2d_all(int64_t *vec2d, int64_t rows, int64_t cols){
+double sum2d_all(int64_t *vec2d, int64_t rows,int64_t cols){
     int result=0;
     for(int i = 0; i < rows; i++)
         for(int j = 0; j < cols; j++)
-            printf("---\t %d\n",vec2d[i + j*rows]);
-    for(int i = 0; i < cols; i++)
-        for(int j = 0; j < rows; j++)
-            result += vec2d[j*cols + i];
+            printf("---\t %d\n",vec2d[j*rows + i]);
+//          printf("---\t %d\n",vec2d[i + j*rows]);
+    for(int i = 0; i < rows; i++)
+        for(int j = 0; j < cols; j++)
+            result += vec2d[j*rows + i];
 
     return(result);
 }

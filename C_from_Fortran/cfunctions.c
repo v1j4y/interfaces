@@ -23,14 +23,15 @@ void mapsum(int64_t *vec, int64_t *len, int64_t *res){
     *res = sum_all(vec, *len);
 }
 
-double sum2d_all(int64_t *vec2d, int64_t rows, int64_t cols){
+double sum2d_all(int64_t *vec2d, int64_t rows,int64_t cols){
     int result=0;
     for(int i = 0; i < rows; i++)
         for(int j = 0; j < cols; j++)
-            printf("---\t %d\n",vec2d[i + j*rows]);
-    for(int i = 0; i < cols; i++)
-        for(int j = 0; j < rows; j++)
-            result += vec2d[j*cols + i];
+            printf("---\t %d\n",vec2d[j*rows + i]);
+//          printf("---\t %d\n",vec2d[i + j*rows]);
+    for(int i = 0; i < rows; i++)
+        for(int j = 0; j < cols; j++)
+            result += vec2d[j*rows + i];
 
     return(result);
 }
