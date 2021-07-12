@@ -1,4 +1,5 @@
 # -*- mode:org -*-
+#+startup: showeverything
 #+TITLE: Call C from Fortran
 #+Author: Vijay
 #+email: vijay.gopal.c@gmail.com
@@ -479,7 +480,7 @@ Fortran using ~ISO_C_BINDING~.  Remember that the memory layout in Fortran and C
 is reversed.  The array layout goes from ~(rows, cols)~ in Fortran to ~[i +
 j*rows]~ in C.
 
-#+begin_src C :main no :tangle cfunctions.c
+#+begin_src C :main no #:tangle cfunctions.c
 #include <stdint.h>
 
 double sum4d_all(double *vec2d, int64_t rows,int64_t cols){
@@ -506,7 +507,7 @@ void mapsum4d(double *vec2d, int64_t rows, int64_t cols, double *res){
 
 The important thing here is to carefully give the dimensions.
 
-#+begin_src f90 :main no :tangle fmain.f90
+#+begin_src f90 :main no #:tangle fmain.f90
       module cfunctions_intvec4d
       use, intrinsic :: ISO_C_BINDING
       interface
@@ -527,7 +528,7 @@ The important thing here is to carefully give the dimensions.
 Now the main program can call the C function. Remember that a 64 bit integer
 in C (i.e. ~int64_t~) is equivalent to ~integer*8~ in Fortran.
 
-#+begin_src f90 :main no :tangle fmain.f90
+#+begin_src f90 :main no #:tangle fmain.f90
       program main
       use, intrinsic :: ISO_C_BINDING
       use cfunctions_intvec4d
@@ -754,14 +755,14 @@ j*rows]~ in C.
 #+begin_src C :main no :tangle cfunctions.c
 #include <stdint.h>
 
-double sum4d_all(double *vec2d, int64_t rows,int64_t cols){
+double sum4d_all(double *vec2d, int64_t rows, int64_t cols){
     double result=0.0;
-    for(int i = 0; i < rows; i++)
-        for(int j = 0; j < cols; j++)
+    for(int j = 0; j < cols; ++j)
+        for(int i = 0; i < rows; ++i)
             printf("---\t %14.5f\n",vec2d[j*rows + i]);
 //          printf("---\t %d\n",vec2d[i + j*rows]);
-    for(int i = 0; i < rows; i++)
-        for(int j = 0; j < cols; j++)
+    for(int j = 0; j < cols; ++j)
+        for(int i = 0; i < rows; ++i)
             result += vec2d[j*rows + i];
 
     return(result);
@@ -805,35 +806,35 @@ in C (i.e. ~int64_t~) is equivalent to ~integer*8~ in Fortran.
       use cfunctions_intvec4d
       implicit none
       integer*8 :: rows = 10
+      integer*8 :: colsall = 4
       integer*8 :: cols = 2
-      real*8, dimension(2,2,10, 2) :: vec2d
+      real*8, dimension(10,4,2,2) :: vec2d
       real*8 :: res = 0
       integer :: i
       integer :: j,k,l
       integer :: count=0
-      do k=1,2
-         do l=1,2
+      do k=1, 2
+         do l=1, 2
             count = 0
-            do i = 1,rows
-               do j = 1, cols
-                  vec2d(k,l,i,j) = count*1.0
+            do j = 1, colsall
+               do i = 1, rows
+                  vec2d(i,j,l,k) = count*1.0d0
+                  !print *,vec2d(k,l,i,j)
                   count = count + 1
-                  print *,vec2d(k,l,i,j)
                end do
             end do
          end do
       end do
       count = 0
-      do i = 1,rows
-         do j = 1, cols
-            count = count + vec2d(1,1,i,j)
+      do j = 1, colsall
+         do i = 1, rows
+            print *,vec2d(i,j,1,1)
+            res = res + vec2d(i,j,1,1)
          end do
       end do
       print *,rows,cols,res, count
-      call cmapsum4d(vec2d(1,1,:,:), rows, cols, res)
-      call cmapsum4d(vec2d(1,2,:,:), rows, cols, res)
-      call cmapsum4d(vec2d(2,1,:,:), rows, cols, res)
-      call cmapsum4d(vec2d(2,2,:,:), rows, cols, res)
+      res = 0.0d0
+      call cmapsum4d(vec2d(:,:,1,1), rows, colsall, res)
       print *,rows, cols, res
       end program main
 #+end_src
@@ -846,165 +847,86 @@ rm ./main.exe
 #+end_src
 
 #+RESULTS:
-|  0.0 |      |       |     |
-|  1.0 |      |       |     |
-|  2.0 |      |       |     |
-|  3.0 |      |       |     |
-|  4.0 |      |       |     |
-|  5.0 |      |       |     |
-|  6.0 |      |       |     |
-|  7.0 |      |       |     |
-|  8.0 |      |       |     |
-|  9.0 |      |       |     |
-| 10.0 |      |       |     |
-| 11.0 |      |       |     |
-| 12.0 |      |       |     |
-| 13.0 |      |       |     |
-| 14.0 |      |       |     |
-| 15.0 |      |       |     |
-| 16.0 |      |       |     |
-| 17.0 |      |       |     |
-| 18.0 |      |       |     |
-| 19.0 |      |       |     |
-|  0.0 |      |       |     |
-|  1.0 |      |       |     |
-|  2.0 |      |       |     |
-|  3.0 |      |       |     |
-|  4.0 |      |       |     |
-|  5.0 |      |       |     |
-|  6.0 |      |       |     |
-|  7.0 |      |       |     |
-|  8.0 |      |       |     |
-|  9.0 |      |       |     |
-| 10.0 |      |       |     |
-| 11.0 |      |       |     |
-| 12.0 |      |       |     |
-| 13.0 |      |       |     |
-| 14.0 |      |       |     |
-| 15.0 |      |       |     |
-| 16.0 |      |       |     |
-| 17.0 |      |       |     |
-| 18.0 |      |       |     |
-| 19.0 |      |       |     |
-|  0.0 |      |       |     |
-|  1.0 |      |       |     |
-|  2.0 |      |       |     |
-|  3.0 |      |       |     |
-|  4.0 |      |       |     |
-|  5.0 |      |       |     |
-|  6.0 |      |       |     |
-|  7.0 |      |       |     |
-|  8.0 |      |       |     |
-|  9.0 |      |       |     |
-| 10.0 |      |       |     |
-| 11.0 |      |       |     |
-| 12.0 |      |       |     |
-| 13.0 |      |       |     |
-| 14.0 |      |       |     |
-| 15.0 |      |       |     |
-| 16.0 |      |       |     |
-| 17.0 |      |       |     |
-| 18.0 |      |       |     |
-| 19.0 |      |       |     |
-|  0.0 |      |       |     |
-|  1.0 |      |       |     |
-|  2.0 |      |       |     |
-|  3.0 |      |       |     |
-|  4.0 |      |       |     |
-|  5.0 |      |       |     |
-|  6.0 |      |       |     |
-|  7.0 |      |       |     |
-|  8.0 |      |       |     |
-|  9.0 |      |       |     |
-| 10.0 |      |       |     |
-| 11.0 |      |       |     |
-| 12.0 |      |       |     |
-| 13.0 |      |       |     |
-| 14.0 |      |       |     |
-| 15.0 |      |       |     |
-| 16.0 |      |       |     |
-| 17.0 |      |       |     |
-| 18.0 |      |       |     |
-| 19.0 |      |       |     |
-|   10 |    2 |   0.0 | 190 |
-|  --- |  0.0 |       |     |
-|  --- |  1.0 |       |     |
-|  --- |  2.0 |       |     |
-|  --- |  3.0 |       |     |
-|  --- |  4.0 |       |     |
-|  --- |  5.0 |       |     |
-|  --- |  6.0 |       |     |
-|  --- |  7.0 |       |     |
-|  --- |  8.0 |       |     |
-|  --- |  9.0 |       |     |
-|  --- | 10.0 |       |     |
-|  --- | 11.0 |       |     |
-|  --- | 12.0 |       |     |
-|  --- | 13.0 |       |     |
-|  --- | 14.0 |       |     |
-|  --- | 15.0 |       |     |
-|  --- | 16.0 |       |     |
-|  --- | 17.0 |       |     |
-|  --- | 18.0 |       |     |
-|  --- | 19.0 |       |     |
-|  --- |  0.0 |       |     |
-|  --- |  1.0 |       |     |
-|  --- |  2.0 |       |     |
-|  --- |  3.0 |       |     |
-|  --- |  4.0 |       |     |
-|  --- |  5.0 |       |     |
-|  --- |  6.0 |       |     |
-|  --- |  7.0 |       |     |
-|  --- |  8.0 |       |     |
-|  --- |  9.0 |       |     |
-|  --- | 10.0 |       |     |
-|  --- | 11.0 |       |     |
-|  --- | 12.0 |       |     |
-|  --- | 13.0 |       |     |
-|  --- | 14.0 |       |     |
-|  --- | 15.0 |       |     |
-|  --- | 16.0 |       |     |
-|  --- | 17.0 |       |     |
-|  --- | 18.0 |       |     |
-|  --- | 19.0 |       |     |
-|  --- |  0.0 |       |     |
-|  --- |  1.0 |       |     |
-|  --- |  2.0 |       |     |
-|  --- |  3.0 |       |     |
-|  --- |  4.0 |       |     |
-|  --- |  5.0 |       |     |
-|  --- |  6.0 |       |     |
-|  --- |  7.0 |       |     |
-|  --- |  8.0 |       |     |
-|  --- |  9.0 |       |     |
-|  --- | 10.0 |       |     |
-|  --- | 11.0 |       |     |
-|  --- | 12.0 |       |     |
-|  --- | 13.0 |       |     |
-|  --- | 14.0 |       |     |
-|  --- | 15.0 |       |     |
-|  --- | 16.0 |       |     |
-|  --- | 17.0 |       |     |
-|  --- | 18.0 |       |     |
-|  --- | 19.0 |       |     |
-|  --- |  0.0 |       |     |
-|  --- |  1.0 |       |     |
-|  --- |  2.0 |       |     |
-|  --- |  3.0 |       |     |
-|  --- |  4.0 |       |     |
-|  --- |  5.0 |       |     |
-|  --- |  6.0 |       |     |
-|  --- |  7.0 |       |     |
-|  --- |  8.0 |       |     |
-|  --- |  9.0 |       |     |
-|  --- | 10.0 |       |     |
-|  --- | 11.0 |       |     |
-|  --- | 12.0 |       |     |
-|  --- | 13.0 |       |     |
-|  --- | 14.0 |       |     |
-|  --- | 15.0 |       |     |
-|  --- | 16.0 |       |     |
-|  --- | 17.0 |       |     |
-|  --- | 18.0 |       |     |
-|  --- | 19.0 |       |     |
-|   10 |    2 | 190.0 |     |
+|  0.0 |      |       |   |
+|  1.0 |      |       |   |
+|  2.0 |      |       |   |
+|  3.0 |      |       |   |
+|  4.0 |      |       |   |
+|  5.0 |      |       |   |
+|  6.0 |      |       |   |
+|  7.0 |      |       |   |
+|  8.0 |      |       |   |
+|  9.0 |      |       |   |
+| 10.0 |      |       |   |
+| 11.0 |      |       |   |
+| 12.0 |      |       |   |
+| 13.0 |      |       |   |
+| 14.0 |      |       |   |
+| 15.0 |      |       |   |
+| 16.0 |      |       |   |
+| 17.0 |      |       |   |
+| 18.0 |      |       |   |
+| 19.0 |      |       |   |
+| 20.0 |      |       |   |
+| 21.0 |      |       |   |
+| 22.0 |      |       |   |
+| 23.0 |      |       |   |
+| 24.0 |      |       |   |
+| 25.0 |      |       |   |
+| 26.0 |      |       |   |
+| 27.0 |      |       |   |
+| 28.0 |      |       |   |
+| 29.0 |      |       |   |
+| 30.0 |      |       |   |
+| 31.0 |      |       |   |
+| 32.0 |      |       |   |
+| 33.0 |      |       |   |
+| 34.0 |      |       |   |
+| 35.0 |      |       |   |
+| 36.0 |      |       |   |
+| 37.0 |      |       |   |
+| 38.0 |      |       |   |
+| 39.0 |      |       |   |
+|   10 |    2 | 780.0 | 0 |
+|  --- |  0.0 |       |   |
+|  --- |  1.0 |       |   |
+|  --- |  2.0 |       |   |
+|  --- |  3.0 |       |   |
+|  --- |  4.0 |       |   |
+|  --- |  5.0 |       |   |
+|  --- |  6.0 |       |   |
+|  --- |  7.0 |       |   |
+|  --- |  8.0 |       |   |
+|  --- |  9.0 |       |   |
+|  --- | 10.0 |       |   |
+|  --- | 11.0 |       |   |
+|  --- | 12.0 |       |   |
+|  --- | 13.0 |       |   |
+|  --- | 14.0 |       |   |
+|  --- | 15.0 |       |   |
+|  --- | 16.0 |       |   |
+|  --- | 17.0 |       |   |
+|  --- | 18.0 |       |   |
+|  --- | 19.0 |       |   |
+|  --- | 20.0 |       |   |
+|  --- | 21.0 |       |   |
+|  --- | 22.0 |       |   |
+|  --- | 23.0 |       |   |
+|  --- | 24.0 |       |   |
+|  --- | 25.0 |       |   |
+|  --- | 26.0 |       |   |
+|  --- | 27.0 |       |   |
+|  --- | 28.0 |       |   |
+|  --- | 29.0 |       |   |
+|  --- | 30.0 |       |   |
+|  --- | 31.0 |       |   |
+|  --- | 32.0 |       |   |
+|  --- | 33.0 |       |   |
+|  --- | 34.0 |       |   |
+|  --- | 35.0 |       |   |
+|  --- | 36.0 |       |   |
+|  --- | 37.0 |       |   |
+|  --- | 38.0 |       |   |
+|  --- | 39.0 |       |   |
+|   10 |    2 | 780.0 |   |
+

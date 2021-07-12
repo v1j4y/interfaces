@@ -1,0 +1,245 @@
+# -*- mode:org -*-
+#+startup: showeverything
+#+TITLE: Call Fortran from C
+#+Author: Vijay
+#+email: vijay.gopal.c@gmail.com
+
+* Calling Fortran functions from C
+
+** Introduction
+
+Understanding the difference between a C interface and a Fortran interface.
+
+** TODO [/] Basics
+
+- [ ] Fortran function
+
+  A simple function to calculate the sin of a floating point number.
+
+#+name: fortransinfunc
+#+begin_src f90 :main no #:tangle fortfunction.f90
+module fortmodule
+use iso_c_binding
+implicit none
+
+integer(C_INT), bind(C), dimension(5) :: numbers
+
+contains
+
+subroutine fortransub() bind(C)
+
+   print *, "Hello from Fortran!"
+   numbers(1) = 1
+   numbers(2) = 2
+   numbers(3) = 3
+   numbers(4) = 4
+   numbers(5) = 5
+
+end subroutine
+
+end module
+#+end_src
+
+- [ ] C main
+
+#+name: cmain
+#+begin_src C #:tangle cmain.c
+#include <stdio.h>
+
+extern void fortransub();
+extern int numbers[5];
+
+int main(void)
+{
+   int i;
+   printf("Hello from C!\n");
+   fortransub();
+   for (i=0; i<5; i=i+1)
+      printf("%d ", numbers[i]);
+   printf("\n");
+
+return 0;
+}
+#+end_src
+
+  #+RESULTS: cmain
+
+- [ ] Makefile
+
+#+begin_src shell #:tangle Makefile
+CC=gcc
+FC=gfortran
+
+a.out: cmain.o
+	${FC} cmain.o fortfunction.f90
+
+cmain.o:
+	${CC} -c cmain.c
+#+end_src
+
+
+- [ ] run
+
+#+begin_src bash
+rm ./a.out cmain.o
+make
+./a.out
+rm ./a.out cmain.o
+#+end_src
+
+#+RESULTS:
+| gcc      | -c      | cmain.c          |   |   |
+| gfortran | cmain.o | fortfunction.f90 |   |   |
+| Hello    | from    | C!               |   |   |
+| Hello    | from    | Fortran!         |   |   |
+| 1        | 2       | 3                | 4 | 5 |
+
+** Calling Fortran with 2D array
+
+  This involves writing a fortran function with a Fortran interface.
+  This Fortran interface will be called by the main function.
+
+*** Fortran library
+
+#+begin_src f90 :tangle fortlib.f90
+double precision function computevec2d_f(rows, cols, vec2d) result(info)
+  implicit none
+  integer*8, intent(in), value :: rows, cols
+  double precision, intent(out) :: vec2d(rows,cols)
+  integer :: i, j
+
+  do j = 1, cols
+    print *,vec2d(:,j)
+  end do
+  info = 0.0d0
+  do j = 1, cols
+    do i = 1, rows
+      info = info + vec2d(i,j)
+    end do
+  end do
+  print *,"Info=",info, rows, cols
+end function computevec2d_f
+#+end_src
+
+*** Interface
+
+#+begin_src f90 :tangle fortlib.f90
+module tmpmod
+  use, intrinsic :: ISO_C_BINDING
+  interface
+     real (C_DOUBLE) function computevec2d_f(rows, cols, vec2d) result(info)
+       use, intrinsic :: ISO_C_BINDING
+       implicit none
+       integer(C_INT64_T), intent(in), value :: rows
+       integer(C_INT64_T), intent(in), value :: cols
+       real (C_DOUBLE), intent(in) :: vec2d(rows, cols)
+     end function computevec2d_f
+  end interface
+end module tmpmod
+
+real (C_DOUBLE) function computevec2d(rows, cols, vec2d) &
+                          bind(C) result(info)
+  use, intrinsic:: ISO_C_BINDING
+  use tmpmod
+  implicit none
+  integer (C_INT64_T), intent(in), value :: rows
+  integer (C_INT64_T), intent(in), value :: cols
+  real (C_DOUBLE), intent(out)       :: vec2d(cols,rows)
+  info = computevec2d_f(cols, rows, vec2d)
+end function computevec2d
+#+end_src
+
+*** C Header
+
+#+begin_src C :tangle cmain.h :main no
+#include <stdio.h>
+#include <stdint.h>
+#include <stdlib.h>
+
+double computevec2d(int64_t rows, int64_t cols, double *vec2d);
+#+end_src
+
+*** C main
+
+#+begin_src C :tangle cmain.c
+#include "cmain.h"
+
+int main() {
+  int64_t  rows, cols;
+  double *vec2d;
+  double res = 0.0;
+  rows = 10;
+  cols = 4;
+  vec2d = (double *)malloc(rows * cols * sizeof(double));
+  for(int i=0;i<rows;++i) {
+    for(int j=0;j<cols;++j) {
+      vec2d[i*cols + j] = i + j; 
+      res += i + j;
+    }
+  }
+  for(int i=0;i<rows;++i) {
+    for(int j=0;j<cols;++j) {
+      printf("%5.4f ",vec2d[i*cols + j]);
+    }
+    printf("\n");
+  }
+  printf("Calling Fortran function res=%10.15f\n",res);
+  res = computevec2d(rows, cols, vec2d);
+  printf("Done res=%10.15f\n",res);
+  free(vec2d);
+  return 0;
+}
+#+end_src
+  
+*** Makefile
+#+begin_src shell :tangle Makefile
+CC=gcc
+FC=gfortran
+
+a.out: cmain.o fortlib.o
+	${CC} -o a.out cmain.o fortlib.o -lgfortran
+
+fortlib.o:
+	${FC} -c fortlib.f90 -lstdc++
+
+cmain.o:
+	${CC} -I. -c cmain.c
+#+end_src
+
+
+- [ ] run
+
+#+begin_src bash
+rm ./a.out cmain.o fortlib.o
+make
+./a.out
+rm ./a.out cmain.o
+#+end_src
+
+#+RESULTS:
+|      gcc |                     -I. |          -c |                 cmain.c |           |            |
+| gfortran |                      -c | fortlib.f90 |                -lstdc++ |           |            |
+|      gcc |                      -o |       a.out |                 cmain.o | fortlib.o | -lgfortran |
+|      0.0 |                     1.0 |         2.0 |                     3.0 |           |            |
+|      1.0 |                     2.0 |         3.0 |                     4.0 |           |            |
+|      2.0 |                     3.0 |         4.0 |                     5.0 |           |            |
+|      3.0 |                     4.0 |         5.0 |                     6.0 |           |            |
+|      4.0 |                     5.0 |         6.0 |                     7.0 |           |            |
+|      5.0 |                     6.0 |         7.0 |                     8.0 |           |            |
+|      6.0 |                     7.0 |         8.0 |                     9.0 |           |            |
+|      7.0 |                     8.0 |         9.0 |                    10.0 |           |            |
+|      8.0 |                     9.0 |        10.0 |                    11.0 |           |            |
+|      9.0 |                    10.0 |        11.0 |                    12.0 |           |            |
+|  Calling |                 Fortran |    function | res=240.000000000000000 |           |            |
+|      0.0 |                     1.0 |         2.0 |                     3.0 |           |            |
+|      1.0 |                     2.0 |         3.0 |                     4.0 |           |            |
+|      2.0 |                     3.0 |         4.0 |                     5.0 |           |            |
+|      3.0 |                     4.0 |         5.0 |                     6.0 |           |            |
+|      4.0 |                     5.0 |         6.0 |                     7.0 |           |            |
+|      5.0 |                     6.0 |         7.0 |                     8.0 |           |            |
+|      6.0 |                     7.0 |         8.0 |                     9.0 |           |            |
+|      7.0 |                     8.0 |         9.0 |                    10.0 |           |            |
+|      8.0 |                     9.0 |        10.0 |                    11.0 |           |            |
+|      9.0 |                    10.0 |        11.0 |                    12.0 |           |            |
+|    Info= |                   240.0 |           4 |                      10 |           |            |
+|     Done | res=240.000000000000000 |             |                         |           |            |
